@@ -138,12 +138,12 @@ class ExtendedInventoryEnv(gym.Env):
         self.episode_return = 0.0
 
     def seed(self, seed=None):
-        """Set random seed for reproducibility."""
+        "Set random seed for reproducibility."
         self.np_random = np.random.RandomState(seed)
         return [seed]
     
     def reset(self) -> np.ndarray:
-        """Reset environment to initial state."""
+        "Reset environment to initial state."
         # Initialize inventory levels
         self.inventory = self.np_random.randint(50, 150)
         self.pipeline = 0
@@ -169,7 +169,7 @@ class ExtendedInventoryEnv(gym.Env):
         return self._get_state()
     
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
-        """Execute one environment step."""
+        "Execute one environment step."
         # Convert action to order quantity
         if self.discrete_actions:
             order_quantity = self.action_values[action]
@@ -245,7 +245,7 @@ class ExtendedInventoryEnv(gym.Env):
         return self._get_state(), reward, terminated, truncated, info
     
     def _get_state(self) -> np.ndarray:
-        """Get current state observation."""
+        "Get current state observation."
         # Calculate seasonality (sine-encoded)
         seasonality = np.sin(2 * np.pi * self.time_step / 365)
         
@@ -262,7 +262,7 @@ class ExtendedInventoryEnv(gym.Env):
         return state
     
     def _update_external_factors(self):
-        """Update weather and promotion status."""
+        "Update weather and promotion status."
         # Weather transitions (Markov chain)
         if self.weather == 0:  # Normal
             probs = [0.7, 0.15, 0.15]
@@ -282,7 +282,7 @@ class ExtendedInventoryEnv(gym.Env):
         self.promotion = 1 if self.np_random.random() < base_promo_prob else 0
     
     def _generate_demand(self) -> float:
-        """Generate demand based on current conditions."""
+        "Generate demand based on current conditions."
         # Base demand with modifiers
         lambda_t = self.base_demand
         
@@ -303,7 +303,7 @@ class ExtendedInventoryEnv(gym.Env):
         return demand
     
     def _process_pipeline(self) -> float:
-        """Process pipeline deliveries for current time step."""
+        "Process pipeline deliveries for current time step."
         delivered = 0
         remaining_orders = []
         
@@ -318,14 +318,14 @@ class ExtendedInventoryEnv(gym.Env):
         return delivered
     
     def render(self, mode='human'):
-        """Render the environment (for visualization)."""
+        "Render the environment (for visualization)."
         if mode == 'human':
             print(f"Time: {self.time_step}, Inventory: {self.inventory:.0f}, "
                   f"Pipeline: {self.pipeline:.0f}, Weather: {self.weather}, "
                   f"Promotion: {self.promotion}")
     
     def plot_episode(self):
-        """Plot episode history for analysis."""
+        "Plot episode history for analysis."
         if not self.history['inventory']:
             print("No history to plot. Run an episode first.")
             return
@@ -388,7 +388,7 @@ class ExtendedInventoryEnv(gym.Env):
 
 # Testing utilities
 def test_environment():
-    """Test the extended inventory environment."""
+    "Test the extended inventory environment."
     env = ExtendedInventoryEnv(discrete_actions=True, seed=42)
     
     print("Environment created successfully!")
