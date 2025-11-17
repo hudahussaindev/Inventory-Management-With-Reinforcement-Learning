@@ -1,5 +1,6 @@
-from ExtendedInventoryEnv import ExtendedInventoryEnv
-from QLearning import QLearningAgent, StateDiscretizer
+from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
+from rl_inventory.agents.qlearning.qlearning import QLearningAgent, StateDiscretizer
+
 import numpy as np
 
 def train_agent(
@@ -64,6 +65,10 @@ def demo_run(agent, disc):
     env.plot_episode()
 
 
-if __name__ == "__main__":
+def main():
     agent, disc = train_agent(num_episodes=200)
     demo_run(agent, disc)
+
+
+if __name__ == "__main__":
+    main()

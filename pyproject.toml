@@ -1,0 +1,19 @@
+[project]
+name = "rl-inventory"
+version = "0.1.0"
+description = "Evaluating Reinforcement Learning methods using Inventory Management"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "torch",
+    "gymnasium",
+    "matplotlib",
+    "pandas"
+]
+
+[project.scripts]
+inventory-q-learning-demo = "rl_inventory.scripts.q_learning_demo:main"
+inventory-eval = "rl_inventory.scripts.evaluate:main"
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

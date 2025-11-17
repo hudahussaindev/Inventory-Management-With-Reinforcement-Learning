@@ -21,8 +21,8 @@ Phase 1 Implementation
 """
 
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium  import spaces
 from typing import Tuple, Dict, Any
 import matplotlib.pyplot as plt
 from collections import deque

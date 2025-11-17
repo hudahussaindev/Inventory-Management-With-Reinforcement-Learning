@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import Dict, List
-from ExtendedInventoryEnv import ExtendedInventoryEnv
+from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
+from rl_inventory.agents.qlearning.qlearning import QLearningAgent, StateDiscretizer
 
 
 class InventoryEvaluator:
@@ -160,7 +161,7 @@ def main():
     
     # Train agent
     print("Training Q-Learning agent...")
-    from demo import train_agent
+    from rl_inventory.scripts.q_learning_demo import train_agent
     agent, disc = train_agent(num_episodes=200)
     
     # Evaluate
