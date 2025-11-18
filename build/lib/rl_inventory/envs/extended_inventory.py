@@ -403,6 +403,7 @@ class ExtendedInventoryEnv(gym.Env):
         plt.tight_layout()
         plt.show()
 
+
 # Testing utilities
 def test_environment():
     "Test the extended inventory environment."
