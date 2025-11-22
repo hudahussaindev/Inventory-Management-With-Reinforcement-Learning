@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from typing import Dict, List
 from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
 from rl_inventory.agents.qlearning.qlearning import QLearningAgent, StateDiscretizer
+from rl_inventory.envs.extended_inventory_ppo import ExtendedInventoryEnvPPO
 
 
 class InventoryEvaluator:
@@ -22,6 +23,9 @@ class InventoryEvaluator:
             self.env.seed(seed)
             
         state = self.env.reset()
+        if isinstance(state, tuple):
+            state, _ = state
+
         total_reward = total_cost = 0
         costs = {'holding': [], 'stockout': [], 'ordering': []}
         inventory = []
@@ -47,6 +51,9 @@ class InventoryEvaluator:
             # Step
             next_state, reward, terminated, truncated, info = self.env.step(action)
             
+            if isinstance(next_state, tuple):
+                next_state, _ = next_state
+                
             # Collect metrics
             total_reward += reward
             total_cost += info['total_cost']
@@ -178,7 +185,7 @@ def main():
     
     #PPO (CONTINUOUS ACTIONS)
     print("\nSetting up PPO evaluation...")
-    env_cont = ExtendedInventoryEnv(discrete_actions=False, seed=42)
+    env_cont = ExtendedInventoryEnvPPO(seed=42)
     evaluator_cont = InventoryEvaluator(env_cont)
     
     # Train PPO agent (SB3-based wrapper from ppo_demo)

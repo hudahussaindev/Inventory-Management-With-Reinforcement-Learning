@@ -142,22 +142,8 @@ class ExtendedInventoryEnv(gym.Env):
         self.np_random = np.random.RandomState(seed)
         return [seed]
     
-    
-    def reset(self, seed=None, options=None):
-        """
-        Reset environment to initial state.
-        
-        Args:
-            seed: Random seed (for Gymnasium/SB3 compatibility)
-            options: Additional options (for Gymnasium compatibility)
-            
-        Returns:
-            tuple: (observation, info) - Gymnasium standard format
-        """
-        # Set seed if provided
-        if seed is not None:
-            self.seed(seed)
-        
+    def reset(self) -> np.ndarray:
+        "Reset environment to initial state."
         # Initialize inventory levels
         self.inventory = self.np_random.randint(50, 150)
         self.pipeline = 0
@@ -180,12 +166,8 @@ class ExtendedInventoryEnv(gym.Env):
         for key in self.history:
             self.history[key] = []
         
-        # Return observation and info dict (Gymnasium format)
-        observation = self._get_state()
-        info = {}
-        
-        return observation, info
-
+        return self._get_state()
+    
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         "Execute one environment step."
         # Convert action to order quantity
@@ -228,6 +210,24 @@ class ExtendedInventoryEnv(gym.Env):
         variable = self.variable_order_cost * order_quantity
         total_cost = holding + stockout + fixed + variable
         reward = -total_cost
+
+        if 30 <= self.inventory <= 100:
+            reward += 0.5  # Good inventory level
+
+        if self.inventory < 10:
+            reward -= 1.0  # Too low (risky)
+
+        if self.inventory > 200:
+            reward -= 0.5  # Too high (wasteful)
+
+        if lost_sales == 0 and demand > 0:
+            reward += 0.2  # Successfully met demand
+
+        if self.inventory < 20 and order_quantity > 0:
+            reward += 0.3  # Good decision to order when low
+
+        if 20 <= order_quantity <= 100:
+            reward += 0.1  # Moderate order size
         
         # Update demand history
         self.demand_history.append(min(demand, self.max_demand))
@@ -402,6 +402,7 @@ class ExtendedInventoryEnv(gym.Env):
         
         plt.tight_layout()
         plt.show()
+
 
 # Testing utilities
 def test_environment():

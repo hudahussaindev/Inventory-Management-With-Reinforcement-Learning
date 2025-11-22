@@ -41,13 +41,14 @@ def list_available_models(models_dir):
 
 def train_agent(
     num_timesteps=200000,
-    n_steps=2048,
-    learning_rate=3e-4,
+    n_steps=1024,
+    learning_rate=1e-4,
     batch_size=64,
     n_epochs=10,
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
+    ent_coef= 0.01,
     seed=42,
     save_name=None
 ):
@@ -100,6 +101,7 @@ def train_agent(
         gamma=gamma,
         gae_lambda=gae_lambda,
         clip_range=clip_range,
+        ent_coef= ent_coef,
         seed=seed,
         save_path=save_path,
         verbose=0,
