@@ -142,8 +142,22 @@ class ExtendedInventoryEnv(gym.Env):
         self.np_random = np.random.RandomState(seed)
         return [seed]
     
-    def reset(self) -> np.ndarray:
-        "Reset environment to initial state."
+    
+    def reset(self, seed=None, options=None):
+        """
+        Reset environment to initial state.
+        
+        Args:
+            seed: Random seed (for Gymnasium/SB3 compatibility)
+            options: Additional options (for Gymnasium compatibility)
+            
+        Returns:
+            tuple: (observation, info) - Gymnasium standard format
+        """
+        # Set seed if provided
+        if seed is not None:
+            self.seed(seed)
+        
         # Initialize inventory levels
         self.inventory = self.np_random.randint(50, 150)
         self.pipeline = 0
@@ -166,8 +180,12 @@ class ExtendedInventoryEnv(gym.Env):
         for key in self.history:
             self.history[key] = []
         
-        return self._get_state()
-    
+        # Return observation and info dict (Gymnasium format)
+        observation = self._get_state()
+        info = {}
+        
+        return observation, info
+
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         "Execute one environment step."
         # Convert action to order quantity

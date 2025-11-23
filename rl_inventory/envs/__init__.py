@@ -1,1 +1,2 @@
 from .extended_inventory import ExtendedInventoryEnv
+from .extended_inventory_ppo import ExtendedInventoryEnvPPO
