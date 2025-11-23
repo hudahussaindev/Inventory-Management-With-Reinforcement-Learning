@@ -1,9 +1,9 @@
-from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
+from rl_inventory.envs.extended_inventory_sac import ExtendedInventoryEnvSAC
 from stable_baselines3 import SAC
 
 
 def train_agent(num_timesteps = 200000, learning_rate = 3e-4, buffer_size = 100000, verbose = 1):
-    env = ExtendedInventoryEnv(discrete_actions=False)
+    env = ExtendedInventoryEnvSAC(discrete_actions=False)
  
     agent = SAC(
         policy="MlpPolicy",          
@@ -27,7 +27,7 @@ def train_agent(num_timesteps = 200000, learning_rate = 3e-4, buffer_size = 1000
 
 
 def demo_run(agent):
-    env = ExtendedInventoryEnv(discrete_actions=False)
+    env = ExtendedInventoryEnvSAC(discrete_actions=False)
     
     state, info = env.reset()
     total_reward = 0.0
@@ -50,7 +50,7 @@ def demo_run(agent):
 
 
 def main():
-    agent = train_agent(num_timesteps=200000, verbose=0)
+    agent = train_agent(num_timesteps=365_000, verbose=0)
     demo_run(agent)
 
 

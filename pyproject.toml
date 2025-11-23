@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 inventory-q-learning-demo = "rl_inventory.scripts.q_learning_demo:main"
+inventory-sac-demo = "rl_inventory.scripts.sac_demo:main"
 inventory-ppo-demo = "rl_inventory.scripts.ppo_demo:main"
 inventory-eval = "rl_inventory.scripts.evaluate:main"
 [build-system]

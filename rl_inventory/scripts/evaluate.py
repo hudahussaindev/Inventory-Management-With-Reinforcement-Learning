@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
 from rl_inventory.envs.extended_inventory_ppo import ExtendedInventoryEnvPPO
-
+from rl_inventory.envs.extended_inventory_sac import ExtendedInventoryEnvSAC
 from rl_inventory.agents.qlearning.qlearning import QLearningAgent, StateDiscretizer
 from rl_inventory.scripts.q_learning_demo import train_agent as train_q_agent
 from rl_inventory.scripts.ppo_demo import train_agent as train_ppo_agent
@@ -310,7 +310,7 @@ def main():
     print("\n SAC (Continous)")
     sac_agent, _ = train_sac_agent(num_timesteps=365_000)
 
-    sac_env_factory = make_env_factory(ExtendedInventoryEnv, discrete_actions=False)
+    sac_env_factory = make_env_factory(ExtendedInventoryEnvSAC)
     sac_evaluator = InventoryEvaluator(sac_env_factory)
 
     sac_metrics = sac_evaluator.evaluate_multiple(sac_agent, discretizer=None, num_episodes=10)
