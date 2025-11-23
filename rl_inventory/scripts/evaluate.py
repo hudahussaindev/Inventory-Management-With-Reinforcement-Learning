@@ -15,12 +15,13 @@ import matplotlib.pyplot as plt
 from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
 from rl_inventory.envs.extended_inventory_ppo import ExtendedInventoryEnvPPO
 from rl_inventory.envs.extended_inventory_sac import ExtendedInventoryEnvSAC
+from rl_inventory.envs.ExtendedInventoryEnv_DDQN import ExtendedInventoryEnv_DDQN
 from rl_inventory.agents.qlearning.qlearning import QLearningAgent, StateDiscretizer
 from rl_inventory.scripts.q_learning_demo import train_agent as train_q_agent
 from rl_inventory.scripts.ppo_demo import train_agent as train_ppo_agent
 from rl_inventory.scripts.sac_demo import train_agent as train_sac_agent
 from rl_inventory.scripts.dyna_q_demo import train_agent as train_dyna_agent
-
+from rl_inventory.scripts.demo_ddqn import train_ddqn
 
 
 EnvFactory = Callable[[Optional[int]], ExtendedInventoryEnv]
@@ -44,7 +45,6 @@ def make_env_factory(
         return env_cls(**kwargs)
 
     return _factory
-
 
 
 # InventoryEvaluator
@@ -100,28 +100,28 @@ class InventoryEvaluator:
         max_steps = getattr(env, "episode_length", 365)
 
         while not (terminated or truncated) and steps < max_steps:
-            
+
             if discretizer is not None:
                 # Discrete (Q-Learning, Dyna-Q, Deep Q)
                 disc_state = discretizer.discretize(state)
 
                 if hasattr(agent, "Q"):
                     # Tabular Q-learning style: Q[(state, action)]
-                    q_vals = [agent.Q[(disc_state, a)] for a in range(agent.n_actions)]
+                    q_vals = [agent.Q[(disc_state, a)]
+                              for a in range(agent.n_actions)]
                     action = int(np.argmax(q_vals))
                 else:
                     # Generic discrete agent with select_action()
                     action = agent.select_action(disc_state)
             else:
-                
+
                 action, _ = agent.predict(state, deterministic=True)
 
-            #Environment step
+            # Environment step
             next_state, reward, terminated, truncated, info = env.step(action)
             if isinstance(next_state, tuple):
                 next_state, _info = next_state
 
-            
             total_reward += reward
             total_cost += info["total_cost"]
 
@@ -153,7 +153,8 @@ class InventoryEvaluator:
 
         total_demand = float(sum(demands))
         total_lost = float(sum(lost_sales))
-        fill_rate = 1.0 - (total_lost / total_demand) if total_demand > 0 else 1.0
+        fill_rate = 1.0 - \
+            (total_lost / total_demand) if total_demand > 0 else 1.0
 
         return {
             "total_cost": total_cost,
@@ -180,7 +181,8 @@ class InventoryEvaluator:
         results: List[Dict[str, float]] = []
 
         for i in range(num_episodes):
-            metrics = self.evaluate_episode(agent, discretizer, episode_seed=base_seed + i)
+            metrics = self.evaluate_episode(
+                agent, discretizer, episode_seed=base_seed + i)
             results.append(metrics)
 
         aggregated: Dict[str, Dict[str, float]] = {}
@@ -190,7 +192,8 @@ class InventoryEvaluator:
         keys = results[0].keys()
         for key in keys:
             values = [r[key] for r in results]
-            aggregated[key] = {"mean": float(np.mean(values)), "std": float(np.std(values))}
+            aggregated[key] = {"mean": float(
+                np.mean(values)), "std": float(np.std(values))}
 
         return aggregated
 
@@ -200,7 +203,8 @@ class InventoryEvaluator:
         print(f"{name} Evaluation Report")
 
         print(f"\nCOSTS")
-        print(f"  Avg Daily Cost: ${metrics['avg_cost']['mean']:.2f} (±{metrics['avg_cost']['std']:.2f})")
+        print(
+            f"  Avg Daily Cost: ${metrics['avg_cost']['mean']:.2f} (±{metrics['avg_cost']['std']:.2f})")
         print(f"  Holding Cost:   ${metrics['holding_cost']['mean']:.2f}")
         print(f"  Stockout Cost:  ${metrics['stockout_cost']['mean']:.2f}")
         print(f"  Ordering Cost:  ${metrics['ordering_cost']['mean']:.2f}")
@@ -252,14 +256,14 @@ def main():
 
     results_rows: List[Dict[str, float]] = []
 
-    
     # 1. Q-LEARNING (TABULAR, DISCRETE ACTIONS)
 
     print(" Q-Learning (discrete) ")
 
     q_agent, q_disc = train_q_agent(num_episodes=548)
 
-    q_env_factory = make_env_factory(ExtendedInventoryEnv, discrete_actions=True)
+    q_env_factory = make_env_factory(
+        ExtendedInventoryEnv, discrete_actions=True)
     q_evaluator = InventoryEvaluator(q_env_factory)
 
     q_metrics = q_evaluator.evaluate_multiple(q_agent, q_disc, num_episodes=10)
@@ -274,9 +278,8 @@ def main():
         "Total Reward": q_metrics["total_reward"]["mean"],
     })
 
-    
     print("\n PPO (Continous)")
-   
+
     ppo_agent, _ = train_ppo_agent(
         num_timesteps=365_000,
         n_steps=512,
@@ -294,7 +297,8 @@ def main():
     ppo_env_factory = make_env_factory(ExtendedInventoryEnvPPO)
     ppo_evaluator = InventoryEvaluator(ppo_env_factory)
 
-    ppo_metrics = ppo_evaluator.evaluate_multiple(ppo_agent, discretizer=None, num_episodes=10)
+    ppo_metrics = ppo_evaluator.evaluate_multiple(
+        ppo_agent, discretizer=None, num_episodes=10)
     ppo_evaluator.print_report(ppo_metrics, "PPO")
 
     results_rows.append({
@@ -306,14 +310,14 @@ def main():
         "Total Reward": ppo_metrics["total_cost"]["mean"],
     })
 
-
     print("\n SAC (Continous)")
     sac_agent, _ = train_sac_agent(num_timesteps=365_000)
 
     sac_env_factory = make_env_factory(ExtendedInventoryEnvSAC)
     sac_evaluator = InventoryEvaluator(sac_env_factory)
 
-    sac_metrics = sac_evaluator.evaluate_multiple(sac_agent, discretizer=None, num_episodes=10)
+    sac_metrics = sac_evaluator.evaluate_multiple(
+        sac_agent, discretizer=None, num_episodes=10)
     sac_evaluator.print_report(sac_metrics, "SAC")
 
     results_rows.append({
@@ -325,13 +329,14 @@ def main():
         "Total Reward": sac_metrics["total_reward"]["mean"],
     })
 
-   
     print("\n Dyna-Q (discrete)")
-    
+
     dyna_agent, dyna_disc = train_dyna_agent(num_episodes=1000)
-    dyna_env_factory = make_env_factory(ExtendedInventoryEnv, discrete_actions=True)
+    dyna_env_factory = make_env_factory(
+        ExtendedInventoryEnv, discrete_actions=True)
     dyna_evaluator = InventoryEvaluator(dyna_env_factory)
-    dyna_metrics = dyna_evaluator.evaluate_multiple(dyna_agent, dyna_disc, num_episodes=10)
+    dyna_metrics = dyna_evaluator.evaluate_multiple(
+        dyna_agent, dyna_disc, num_episodes=10)
     dyna_evaluator.print_report(dyna_metrics, "Dyna-Q")
 
     results_rows.append({
@@ -341,6 +346,36 @@ def main():
         "Stockout Rate": dyna_metrics["stockout_rate"]["mean"],
         "Avg Inventory": dyna_metrics["avg_inventory"]["mean"],
         "Total Reward": dyna_metrics["total_reward"]["mean"],
+    })
+
+    print("\n Double DQN (discrete)")
+
+    ddqn_agent, _ = train_ddqn(num_episodes=1000)
+
+    # Wrapper
+    class DDQNWrapper:
+        def __init__(self, agent):
+            self.agent = agent
+
+        def predict(self, state, deterministic=True):
+            return (self.agent.predict(state), None)
+
+    wrapped_ddqn = DDQNWrapper(ddqn_agent)
+    ddqn_env_factory = make_env_factory(
+        ExtendedInventoryEnv_DDQN, discrete_actions=True)
+    ddqn_evaluator = InventoryEvaluator(ddqn_env_factory)
+
+    ddqn_metrics = ddqn_evaluator.evaluate_multiple(
+        wrapped_ddqn, discretizer=None, num_episodes=10)
+    ddqn_evaluator.print_report(ddqn_metrics, "Double DQN")
+
+    results_rows.append({
+        "Algorithm": "Double DQN",
+        "Avg Cost": ddqn_metrics["avg_cost"]["mean"],
+        "Fill Rate": ddqn_metrics["fill_rate"]["mean"],
+        "Stockout Rate": ddqn_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": ddqn_metrics["avg_inventory"]["mean"],
+        "Total Reward": ddqn_metrics["total_reward"]["mean"],
     })
 
     df = pd.DataFrame(results_rows).sort_values("Avg Cost", ascending=True)
