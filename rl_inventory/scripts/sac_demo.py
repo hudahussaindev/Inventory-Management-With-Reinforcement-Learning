@@ -22,7 +22,7 @@ def train_agent(num_timesteps=200000, learning_rate=3e-4, buffer_size=100000, ve
     print(f"Training SAC for {num_timesteps:,}")
     
     model, callback = train_sac(
-        env=make_env,
+        env_fn=make_env,
         total_timesteps=num_timesteps,
         learning_rate=learning_rate,
         buffer_size=buffer_size,
