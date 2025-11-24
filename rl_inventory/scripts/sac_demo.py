@@ -13,7 +13,7 @@ MODELS_DIR = os.path.join(PROJECT_ROOT, "rl_inventory", "agents", "sac", "traine
 MODEL_PATH = os.path.join(MODELS_DIR, "sac_inventory")
 
 
-def train_agent(num_timesteps=200000, learning_rate=3e-4, buffer_size=100000, verbose=0):
+def train_agent(num_timesteps=365_000, learning_rate=3e-4, buffer_size=100000, verbose=0):
     os.makedirs(MODELS_DIR, exist_ok=True)
     
     def make_env():
@@ -84,7 +84,7 @@ def main():
         agent, _ = load_agent()
     else:
         print("\nNo model found. Training new SAC agent")
-        agent, _ = train_agent(num_timesteps=200000, verbose=0)
+        agent, _ = train_agent(num_timesteps=365_000, verbose=0)
     
     demo_run(agent)
     
