@@ -2,3 +2,4 @@ __pycache__/
 .idea/
 *.pyc
 rl_inventory.egg-info/
+build/

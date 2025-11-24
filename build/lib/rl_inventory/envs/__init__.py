@@ -1,1 +1,0 @@
-from .extended_inventory import ExtendedInventoryEnv

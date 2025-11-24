@@ -40,17 +40,17 @@ def list_available_models(models_dir):
 
 
 def train_agent(
-    num_timesteps=200000,
-    n_steps=512,
-    learning_rate=2e-4,
-    batch_size=64,
-    n_epochs=15,
-    gamma=0.99,
-    gae_lambda=0.95,
-    clip_range=0.2,
-    ent_coef= 0.001,
-    seed=42,
-    save_name=None
+        num_timesteps=365_000,
+        n_steps=1024,
+        learning_rate=3e-4,
+        batch_size=64,
+        n_epochs=15,
+        gamma=0.99,
+        gae_lambda=0.95,
+        clip_range=0.2,
+        ent_coef= 0.002,
+        seed=42,
+        save_name=None
 ):
     """
     Train a PPO agent on the inventory environment.
@@ -225,9 +225,9 @@ def main():
                 
                 custom_name = input("\nEnter model name (or press Enter for auto-generated name): ").strip()
                 if custom_name:
-                    agent, _ = train_agent(num_timesteps=200000, save_name=custom_name)
+                    agent, _ = train_agent(num_timesteps=365_000, save_name=custom_name)
                 else:
-                    agent, _ = train_agent(num_timesteps=200000)
+                    agent, _ = train_agent(num_timesteps=365_000)
                 break
             
             try:
@@ -251,7 +251,7 @@ def main():
         if not custom_name:
             custom_name = "ppo_inventory"
         
-        agent, _ = train_agent(num_timesteps=200000, save_name=custom_name)
+        agent, _ = train_agent(num_timesteps=365_000, save_name=custom_name)
     
     # Run demonstration
     demo_run(agent)
