@@ -10,13 +10,21 @@ Usage:
 import argparse
 import os
 import pickle
+import sys
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Any
+from io import StringIO
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from stable_baselines3 import PPO
 from stable_baselines3 import SAC
@@ -40,6 +48,18 @@ EnvFactory = Callable[[Optional[int]], ExtendedInventoryEnv]
 # Base path for saving models (relative to project root)
 BASE_AGENTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "agents")
+
+# Base path for saving results
+BASE_RESULTS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "results")
+
+
+def create_results_directory() -> str:
+    """Create a timestamped results directory."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    results_dir = os.path.join(BASE_RESULTS_PATH, f"evaluation_{timestamp}")
+    os.makedirs(results_dir, exist_ok=True)
+    return results_dir
 
 
 def get_model_save_path(agent_name: str) -> str:
@@ -490,7 +510,7 @@ class InventoryEvaluator:
         print(f"  Total Reward: {metrics['total_reward']['mean']:.2f}")
 
     @staticmethod
-    def compare_algorithms(df: pd.DataFrame) -> None:
+    def compare_algorithms(df: pd.DataFrame, save_path: Optional[str] = None) -> str:
         "Plot comparison across algorithms based on a summary DataFrame."
 
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -509,8 +529,15 @@ class InventoryEvaluator:
         axes[2].tick_params(axis="x", rotation=45)
 
         plt.tight_layout()
-        plt.savefig("comparison.png", dpi=300)
+        
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"\nComparison plot saved to: {save_path}")
+        else:
+            plt.savefig("comparison.png", dpi=300)
+        
         plt.show()
+        return save_path if save_path else "comparison.png"
 
 
 class DDQNWrapper:
@@ -523,12 +550,233 @@ class DDQNWrapper:
         return (self.agent.predict(state), None)
 
 
+class OutputCapture:
+    "Capture stdout to both console and string buffer."
+    
+    def __init__(self):
+        self.buffer = StringIO()
+        self.original_stdout = sys.stdout
+        
+    def start(self):
+        "Start capturing output."
+        sys.stdout = self
+        
+    def stop(self):
+        "Stop capturing output."
+        sys.stdout = self.original_stdout
+        
+    def write(self, text):
+        "Write to both original stdout and buffer."
+        self.original_stdout.write(text)
+        self.buffer.write(text)
+        
+    def flush(self):
+        "Flush both streams."
+        self.original_stdout.flush()
+        self.buffer.flush()
+        
+    def get_output(self):
+        "Get captured output."
+        return self.buffer.getvalue()
+
+def generate_pdf_report(
+    results_dir: str,
+    captured_output: str,
+    df: pd.DataFrame,
+    plot_path: str
+) -> str:
+    """Generate a comprehensive PDF report of the evaluation results.
+    
+    Args:
+        results_dir: Directory to save the PDF
+        captured_output: Captured console output
+        df: DataFrame with summary comparison
+        plot_path: Path to the comparison plot image
+    
+    Returns:
+        Path to the generated PDF
+    """
+    pdf_path = os.path.join(results_dir, "evaluation_report.pdf")
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter)
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Custom styles - simple black text
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.black,
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.black,
+        spaceAfter=12,
+        spaceBefore=12
+    )
+    
+    # Title
+    title = Paragraph("Inventory Management RL Evaluation Report", title_style)
+    story.append(title)
+    
+    # Timestamp
+    timestamp = Paragraph(
+        f"<para align=center>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</para>",
+        styles['Normal']
+    )
+    story.append(timestamp)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Summary table
+    story.append(Paragraph("Summary Comparison", heading_style))
+    
+    # Prepare table data
+    table_data = [["Algorithm", "Avg Cost", "Fill Rate", "Stockout Rate", "Avg Inventory", "Total Reward"]]
+    for _, row in df.iterrows():
+        table_data.append([
+            row["Algorithm"],
+            f"${row['Avg Cost']:.2f}",
+            f"{row['Fill Rate']:.2%}",
+            f"{row['Stockout Rate']:.2%}",
+            f"{row['Avg Inventory']:.1f}",
+            f"{row['Total Reward']:.2f}"
+        ])
+    
+    # Create table with simple blue header and black/white design
+    table = Table(table_data, colWidths=[1.2*inch, 1*inch, 1*inch, 1.2*inch, 1.2*inch, 1.2*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4A90E2')),  # Blue header
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+    ]))
+    
+    story.append(table)
+    story.append(Spacer(1, 0.5*inch))
+    
+    # Add comparison plots
+    story.append(PageBreak())
+    story.append(Paragraph("Performance Comparison Plots", heading_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    if os.path.exists(plot_path):
+        img = Image(plot_path, width=7*inch, height=3.5*inch)
+        story.append(img)
+    
+    # Add detailed results
+    story.append(PageBreak())
+    story.append(Paragraph("Detailed Evaluation Results", heading_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Parse and format the captured output
+    lines = captured_output.split('\n')
+    skip_patterns = [
+        'Auto mode:',
+        'Loaded model from:',
+        'trained_models',
+        'Force train mode:',
+        'Training new model',
+        'Auto-generated name:',
+        'Training ',
+        'Saved model to:',
+        'Comparison plot saved to:',
+    ]
+    
+    # Track if we've reached the summary section
+    in_summary_section = False
+    
+    for line in lines:
+        if line.strip():
+            # Check if we've reached the summary section
+            if 'SUMMARY COMPARISON' in line:
+                in_summary_section = True
+                continue
+            if in_summary_section:
+                continue
+            
+            # Skip lines with loading/saving messages and file paths
+            if any(pattern in line for pattern in skip_patterns):
+                continue
+            
+            # Skip separator lines that appear before algorithm names
+            if line.strip().startswith('===') and not any(keyword in line for keyword in ['SUMMARY', 'COMPARISON']):
+                continue
+            
+            # Skip standalone algorithm names (like "QLEARNING", "PPO", etc.)
+            if line.strip() in ['QLEARNING', 'PPO', 'SAC', 'DYNA_Q', 'DOUBLEDNQN', 'DoubleDQN']:
+                continue
+            
+            # Format different sections
+            if 'Evaluation Report' in line:
+                # Agent headers
+                p = Paragraph(f"<b>{line.strip()}</b>", heading_style)
+                story.append(p)
+            elif any(keyword in line for keyword in ['COSTS', 'SERVICE LEVEL', 'INVENTORY', 'PERFORMANCE']):
+                # Subsection headers
+                story.append(Spacer(1, 0.05*inch))
+                p = Paragraph(f"<b><u>{line.strip()}</u></b>", styles['Normal'])
+                story.append(p)
+            else:
+                # Regular lines
+                p = Paragraph(line.strip(), styles['Normal'])
+                story.append(p)
+    
+    # Add the summary comparison table at the end
+    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph("Summary Comparison", heading_style))
+    story.append(Spacer(1, 0.1*inch))
+    
+    # Create the summary table again with the same blue header styling
+    summary_table_data = [["Algorithm", "Avg Cost", "Fill Rate", "Stockout Rate", "Avg Inventory", "Total Reward"]]
+    for _, row in df.iterrows():
+        summary_table_data.append([
+            row["Algorithm"],
+            f"${row['Avg Cost']:.2f}",
+            f"{row['Fill Rate']:.2%}",
+            f"{row['Stockout Rate']:.2%}",
+            f"{row['Avg Inventory']:.1f}",
+            f"{row['Total Reward']:.2f}"
+        ])
+    
+    summary_table = Table(summary_table_data, colWidths=[1.2*inch, 1*inch, 1*inch, 1.2*inch, 1.2*inch, 1.2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4A90E2')),  # Blue header
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+    ]))
+    
+    story.append(summary_table)
+    
+    # Build PDF
+    doc.build(story)
+    return pdf_path
+
+
 def main():
     """
     Main evaluation script:
       - For each algorithm, prompts to train new or load existing model
       - Saves trained models automatically
       - Evaluates each with fresh envs and shared metrics
+      - Generates PDF report and saves to results directory
     
     Command-line options:
       --auto   Auto mode: use first saved model or train new with auto-generated name
@@ -551,6 +799,14 @@ def main():
     
     auto_mode = args.auto
     force_train = args.train
+
+    # Create results directory
+    results_dir = create_results_directory()
+    print(f"\nResults will be saved to: {results_dir}\n")
+
+    # Start capturing output
+    output_capture = OutputCapture()
+    output_capture.start()
 
     results_rows: List[Dict[str, float]] = []
 
@@ -689,7 +945,32 @@ def main():
     print(f"{'='*60}")
     print(df.to_string(index=False))
 
-    InventoryEvaluator.compare_algorithms(df)
+    # Save comparison plot
+    plot_path = os.path.join(results_dir, "comparison_plots.png")
+    InventoryEvaluator.compare_algorithms(df, save_path=plot_path)
+
+    # Stop capturing output
+    output_capture.stop()
+    captured_text = output_capture.get_output()
+
+    # Save results to CSV
+    csv_path = os.path.join(results_dir, "results_summary.csv")
+    df.to_csv(csv_path, index=False)
+    print(f"\nResults CSV saved to: {csv_path}")
+
+    # Save text output
+    text_path = os.path.join(results_dir, "results_text.txt")
+    with open(text_path, 'w') as f:
+        f.write(captured_text)
+    print(f"Text output saved to: {text_path}")
+
+    # Generate PDF report
+    print("\nGenerating PDF report...")
+    pdf_path = generate_pdf_report(results_dir, captured_text, df, plot_path)
+    print(f"PDF report saved to: {pdf_path}")
+
+    print(f"\nAll results saved to: {results_dir}")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
