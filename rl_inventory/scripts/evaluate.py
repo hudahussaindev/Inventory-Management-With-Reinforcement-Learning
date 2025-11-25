@@ -1,5 +1,13 @@
-"Evaluation Framework for Inventory Management RL"
+"""
+Evaluation Framework for Inventory Management RL
 
+Usage:
+    python evaluate.py          # Interactive mode
+    python evaluate.py --auto   # Auto mode: use first saved model or train new with auto-generated name
+    python evaluate.py --train  # Force train new models for all algorithms
+"""
+
+import argparse
 import os
 import pickle
 from datetime import datetime
@@ -9,7 +17,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
-from rl_inventory.agents.DoubleDQN.ddqn_agent import DoubleDQNAgent
+
+from stable_baselines3 import PPO
+from stable_baselines3 import SAC
+
+from rl_inventory.agents.DoubleDQN.DoubleDQN import DoubleDQNAgent
     
 from rl_inventory.envs.extended_inventory import ExtendedInventoryEnv
 from rl_inventory.envs.extended_inventory_ppo import ExtendedInventoryEnvPPO
@@ -79,14 +91,39 @@ def prompt_model_name(agent_name: str) -> str:
             print("  Invalid choice. Enter 1 or 2.")
 
 
-def prompt_train_or_load(agent_name: str) -> tuple[bool, Optional[str]]:
-    "Prompt user to train a new model or load an existing one."
+def prompt_train_or_load(agent_name: str, auto_mode: bool = False, force_train: bool = False) -> tuple[bool, Optional[str]]:
+    """Prompt user to train a new model or load an existing one.
+    
+    Args:
+        agent_name: Name of the agent
+        auto_mode: If True, automatically select first model or train new
+        force_train: If True, always train a new model
+    """
     saved_models = list_saved_models(agent_name)
     
     print(f"\n{'='*50}")
     print(f" {agent_name.upper()} ")
     print(f"{'='*50}")
     
+    # Force train mode
+    if force_train:
+        print("\nForce train mode: Training new model...")
+        model_name = generate_model_name()
+        print(f"  Auto-generated name: {model_name}")
+        return True, model_name
+    
+    # Auto mode
+    if auto_mode:
+        if saved_models:
+            print(f"\nAuto mode: Loading first saved model: {saved_models[0]}")
+            return False, saved_models[0]
+        else:
+            print("\nAuto mode: No saved models found. Training new model...")
+            model_name = generate_model_name()
+            print(f"  Auto-generated name: {model_name}")
+            return True, model_name
+    
+    # Interactive mode
     if saved_models:
         print(f"\nFound {len(saved_models)} saved model(s):")
         for i, model in enumerate(saved_models, 1):
@@ -115,14 +152,14 @@ def prompt_train_or_load(agent_name: str) -> tuple[bool, Optional[str]]:
 
 def save_qlearning_model(agent: QLearningAgent, discretizer: StateDiscretizer, 
                          agent_name: str, model_name: str) -> str:
-    """Save Q-Learning or Dyna-Q agent (Q-table + discretizer)."""
+    "Save Q-Learning or Dyna-Q agent (Q-table + discretizer)."
     path = get_model_save_path(agent_name)
     filepath = os.path.join(path, f"{model_name}.pkl")
     
     save_data = {
         "Q": dict(agent.Q),
         "n_actions": agent.n_actions,
-        "discretizer_bins": discretizer.bins,
+        "discretizer": discretizer,  # Save entire discretizer object
     }
     
     with open(filepath, "wb") as f:
@@ -140,8 +177,12 @@ def load_qlearning_model(agent_name: str, model_name: str) -> tuple[QLearningAge
     with open(filepath, "rb") as f:
         save_data = pickle.load(f)
     
-    # Recreate discretizer
-    discretizer = StateDiscretizer(bins=save_data["discretizer_bins"])
+    # Get discretizer (either pickled directly or reconstruct from bins)
+    if "discretizer" in save_data:
+        discretizer = save_data["discretizer"]
+    else:
+        # Fallback for older saves that used discretizer_bins
+        discretizer = StateDiscretizer(bins=save_data["discretizer_bins"])
     
     # Recreate agent with loaded Q-table
     agent = QLearningAgent(
@@ -159,15 +200,18 @@ def save_sb3_model(agent, agent_name: str, model_name: str) -> str:
     path = get_model_save_path(agent_name)
     filepath = os.path.join(path, model_name)
     
-    agent.save(filepath)
+    # Handle wrapper classes that contain the actual SB3 model
+    if hasattr(agent, 'model') and hasattr(agent.model, 'save'):
+        agent.model.save(filepath)
+    else:
+        agent.save(filepath)
+    
     print(f"  Saved model to: {filepath}.zip")
     return filepath
 
 
 def load_ppo_model(model_name: str):
     "Load PPO model."
-    from stable_baselines3 import PPO
-    
     path = get_model_save_path("ppo")
     filepath = os.path.join(path, model_name)
     
@@ -178,8 +222,6 @@ def load_ppo_model(model_name: str):
 
 def load_sac_model(model_name: str):
     "Load SAC model."
-    from stable_baselines3 import SAC
-    
     path = get_model_save_path("sac")
     filepath = os.path.join(path, model_name)
     
@@ -187,25 +229,22 @@ def load_sac_model(model_name: str):
     print(f"  Loaded model from: {filepath}.zip")
     return agent
 
-
 def save_ddqn_model(agent, agent_name: str, model_name: str) -> str:
     "Save Double DQN agent."
-    import torch
-    
     path = get_model_save_path(agent_name)
     filepath = os.path.join(path, f"{model_name}.pt")
     
-    # Save the network state dict
-    if hasattr(agent, "policy_net"):
-        torch.save({
-            "policy_net_state_dict": agent.policy_net.state_dict(),
-            "target_net_state_dict": agent.target_net.state_dict(),
-        }, filepath)
-    elif hasattr(agent, "model"):
-        torch.save({"model_state_dict": agent.model.state_dict()}, filepath)
+    # Use the agent's built-in save method if available
+    if hasattr(agent, 'save'):
+        agent.save(filepath)
     else:
-        # Fallback: try to save the whole agent
-        torch.save(agent, filepath)
+        # Fallback for custom save format
+        torch.save({
+            "main_network_state_dict": agent.main_network.state_dict(),
+            "target_network_state_dict": agent.target_network.state_dict(),
+            "epsilon": agent.epsilon,
+            "step_count": agent.step_count
+        }, filepath)
     
     print(f"  Saved model to: {filepath}")
     return filepath
@@ -213,27 +252,29 @@ def save_ddqn_model(agent, agent_name: str, model_name: str) -> str:
 
 def load_ddqn_model(model_name: str):
     "Load Double DQN agent."
-
     path = get_model_save_path("DoubleDQN")
     filepath = os.path.join(path, f"{model_name}.pt")
     
-    # Create a fresh agent and load weights
+    # Create a fresh agent
     env = ExtendedInventoryEnv_DDQN(discrete_actions=True)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
     
     agent = DoubleDQNAgent(state_dim=state_dim, action_dim=action_dim)
     
-    checkpoint = torch.load(filepath, weights_only=False)
-    if "policy_net_state_dict" in checkpoint:
-        agent.policy_net.load_state_dict(checkpoint["policy_net_state_dict"])
-        agent.target_net.load_state_dict(checkpoint["target_net_state_dict"])
-    elif "model_state_dict" in checkpoint:
-        agent.model.load_state_dict(checkpoint["model_state_dict"])
+    # Use the agent's built-in load method if available
+    if hasattr(agent, 'load'):
+        agent.load(filepath)
+    else:
+        # Fallback for custom load format
+        checkpoint = torch.load(filepath, map_location=agent.device, weights_only=False)
+        agent.main_network.load_state_dict(checkpoint["main_network_state_dict"])
+        agent.target_network.load_state_dict(checkpoint["target_network_state_dict"])
+        agent.epsilon = checkpoint.get("epsilon", agent.epsilon_min)
+        agent.step_count = checkpoint.get("step_count", 0)
     
     print(f"  Loaded model from: {filepath}")
     return agent
-
 
 def make_env_factory(
     env_cls: Callable[..., ExtendedInventoryEnv],
@@ -461,12 +502,33 @@ def main():
       - For each algorithm, prompts to train new or load existing model
       - Saves trained models automatically
       - Evaluates each with fresh envs and shared metrics
+    
+    Command-line options:
+      --auto   Auto mode: use first saved model or train new with auto-generated name
+      --train  Force train new models for all algorithms
     """
+    parser = argparse.ArgumentParser(
+        description="Evaluate inventory management RL algorithms"
+    )
+    parser.add_argument(
+        "--auto", "-a",
+        action="store_true",
+        help="Auto mode: use first saved model or train new with auto-generated name"
+    )
+    parser.add_argument(
+        "--train", "-t",
+        action="store_true", 
+        help="Force train new models for all algorithms"
+    )
+    args = parser.parse_args()
+    
+    auto_mode = args.auto
+    force_train = args.train
 
     results_rows: List[Dict[str, float]] = []
 
     # Q-LEARNING (TABULAR, DISCRETE ACTIONS)
-    train_new, model_name = prompt_train_or_load("qlearning")
+    train_new, model_name = prompt_train_or_load("qlearning", auto_mode, force_train)
     
     if train_new:
         print("\n  Training Q-Learning agent...")
@@ -490,23 +552,11 @@ def main():
     })
 
     # PPO (CONTINUOUS)
-    train_new, model_name = prompt_train_or_load("ppo")
+    train_new, model_name = prompt_train_or_load("ppo", auto_mode, force_train)
     
     if train_new:
         print("\n  Training PPO agent...")
-        ppo_agent, _ = train_ppo_agent(
-            num_timesteps=365_000,
-            n_steps=512,
-            learning_rate=2e-4,
-            batch_size=64,
-            n_epochs=15,
-            gamma=0.99,
-            gae_lambda=0.95,
-            clip_range=0.2,
-            ent_coef=0.001,
-            seed=42,
-            save_name=None,
-        )
+        ppo_agent, _ = train_ppo_agent(num_timesteps=365_000)
         save_sb3_model(ppo_agent, "ppo", model_name)
     else:
         ppo_agent = load_ppo_model(model_name)
@@ -526,7 +576,7 @@ def main():
     })
 
     # SAC (CONTINUOUS)
-    train_new, model_name = prompt_train_or_load("sac")
+    train_new, model_name = prompt_train_or_load("sac", auto_mode, force_train)
     
     if train_new:
         print("\n  Training SAC agent...")
@@ -550,7 +600,7 @@ def main():
     })
 
     # DYNA-Q (DISCRETE)
-    train_new, model_name = prompt_train_or_load("dyna_q")
+    train_new, model_name = prompt_train_or_load("dyna_q", auto_mode, force_train)
     
     if train_new:
         print("\n  Training Dyna-Q agent...")
@@ -574,7 +624,7 @@ def main():
     })
 
     # DOUBLE DQN (DISCRETE)
-    train_new, model_name = prompt_train_or_load("DoubleDQN")
+    train_new, model_name = prompt_train_or_load("DoubleDQN", auto_mode, force_train)
     
     if train_new:
         print("\n  Training Double DQN agent...")
@@ -600,7 +650,9 @@ def main():
 
     # Summary comparison
     df = pd.DataFrame(results_rows).sort_values("Avg Cost", ascending=True)
+    print(f"\n{'='*60}")
     print(" SUMMARY COMPARISON ")
+    print(f"{'='*60}")
     print(df.to_string(index=False))
 
     InventoryEvaluator.compare_algorithms(df)

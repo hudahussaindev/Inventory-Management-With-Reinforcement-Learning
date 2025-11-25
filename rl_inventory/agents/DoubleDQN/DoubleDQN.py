@@ -8,7 +8,7 @@ import random
 
 
 class SimpleDQNNetwork(nn.Module):
-    """Neural network for Q-value approximation."""
+    "Neural network for Q-value approximation."
 
     def __init__(self, state_dim: int, action_dim: int, hidden_size: int = 128):
         super(SimpleDQNNetwork, self).__init__()
@@ -23,7 +23,7 @@ class SimpleDQNNetwork(nn.Module):
 
 
 class SimpleReplayBuffer:
-    """Experience replay buffer."""
+    "Experience replay buffer."
 
     def __init__(self, capacity: int = 10000):
         self.buffer = deque(maxlen=capacity)
@@ -47,7 +47,7 @@ class SimpleReplayBuffer:
 
 
 class DoubleDQNAgent:
-    """Simplified Double DQN agent with minimal configuration."""
+    "Simplified Double DQN agent with minimal configuration."
 
     def __init__(
         self,
@@ -91,7 +91,7 @@ class DoubleDQNAgent:
         self.step_count = 0
 
     def select_action(self, state: np.ndarray, training: bool = True) -> int:
-        """Epsilon-greedy action selection."""
+        "Epsilon-greedy action selection."
         if training and np.random.random() < self.epsilon:
             return np.random.randint(self.action_dim)
 
@@ -102,11 +102,11 @@ class DoubleDQNAgent:
             return q_values.argmax().item()
 
     def store_transition(self, state, action, reward, next_state, done):
-        """Store experience in replay buffer."""
+        "Store experience in replay buffer."
         self.replay_buffer.push(state, action, reward, next_state, done)
 
     def train_step(self):
-        """Perform one training step."""
+        "Perform one training step."
         if len(self.replay_buffer) < self.batch_size:
             return None
 
@@ -145,11 +145,11 @@ class DoubleDQNAgent:
         return loss.item()
 
     def decay_epsilon(self):
-        """Exponential epsilon decay."""
+        "Exponential epsilon decay."
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
     def predict(self, state: np.ndarray) -> int:
-        """Predict best action (greedy, no exploration)."""
+        "Predict best action (greedy, no exploration)."
         with torch.no_grad():
             state_tensor = torch.FloatTensor(
                 state).unsqueeze(0).to(self.device)
@@ -157,7 +157,7 @@ class DoubleDQNAgent:
             return q_values.argmax().item()
 
     def save(self, filepath: str):
-        """Save agent state."""
+        "Save agent state."
         torch.save({
             'main_network': self.main_network.state_dict(),
             'epsilon': self.epsilon,
@@ -165,7 +165,7 @@ class DoubleDQNAgent:
         }, filepath)
 
     def load(self, filepath: str):
-        """Load agent state."""
+        "Load agent state."
         checkpoint = torch.load(filepath, map_location=self.device)
         self.main_network.load_state_dict(checkpoint['main_network'])
         self.target_network.load_state_dict(checkpoint['main_network'])
