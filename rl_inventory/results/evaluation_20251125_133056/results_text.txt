@@ -1,0 +1,137 @@
+
+==================================================
+ QLEARNING 
+==================================================
+
+Auto mode: Loading first saved model: 20251124_234818
+  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\qlearning\trained_models\20251124_234818.pkl
+
+Q-Learning Evaluation Report
+
+COSTS
+  Avg Daily Cost: $509.69 (+/-9.87)
+  Holding Cost:   $504.20
+  Stockout Cost:  $161715.00
+  Ordering Cost:  $23816.00
+
+SERVICE LEVEL
+  Fill Rate:     22.2%
+  Stockout Rate: 94.1%
+
+INVENTORY
+  Avg Inventory: 1.4 units
+
+PERFORMANCE
+  Total Reward: -186035.20
+
+==================================================
+ PPO 
+==================================================
+
+Auto mode: Loading first saved model: ppo_model_20251124_232909
+  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\ppo\trained_models\ppo_model_20251124_232909.zip
+
+PPO Evaluation Report
+
+COSTS
+  Avg Daily Cost: $282.44 (+/-6.12)
+  Holding Cost:   $32715.25
+  Stockout Cost:  $25183.56
+  Ordering Cost:  $45190.64
+
+SERVICE LEVEL
+  Fill Rate:     88.0%
+  Stockout Rate: 19.1%
+
+INVENTORY
+  Avg Inventory: 89.6 units
+
+PERFORMANCE
+  Total Reward: -103089.45
+
+==================================================
+ SAC 
+==================================================
+
+Auto mode: Loading first saved model: 20251125_000337
+  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\sac\trained_models\20251125_000337.zip
+
+SAC Evaluation Report
+
+COSTS
+  Avg Daily Cost: $286.87 (+/-6.95)
+  Holding Cost:   $23851.65
+  Stockout Cost:  $24541.01
+  Ordering Cost:  $56315.89
+
+SERVICE LEVEL
+  Fill Rate:     88.2%
+  Stockout Rate: 22.6%
+
+INVENTORY
+  Avg Inventory: 65.3 units
+
+PERFORMANCE
+  Total Reward: -104708.55
+
+==================================================
+ DYNA_Q 
+==================================================
+
+Auto mode: Loading first saved model: 20251125_011757
+  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\dyna_q\trained_models\20251125_011757.pkl
+
+Dyna-Q Evaluation Report
+
+COSTS
+  Avg Daily Cost: $331.36 (+/-14.21)
+  Holding Cost:   $40597.10
+  Stockout Cost:  $33717.00
+  Ordering Cost:  $46632.00
+
+SERVICE LEVEL
+  Fill Rate:     83.8%
+  Stockout Rate: 22.2%
+
+INVENTORY
+  Avg Inventory: 111.2 units
+
+PERFORMANCE
+  Total Reward: -120946.10
+
+==================================================
+ DOUBLEDQN 
+==================================================
+
+Auto mode: Loading first saved model: 20251125_012040
+  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\DoubleDQN\trained_models\20251125_012040.pt
+
+Double DQN Evaluation Report
+
+COSTS
+  Avg Daily Cost: $306.54 (+/-5.17)
+  Holding Cost:   $35812.30
+  Stockout Cost:  $20981.00
+  Ordering Cost:  $55094.00
+
+SERVICE LEVEL
+  Fill Rate:     90.0%
+  Stockout Rate: 15.7%
+
+INVENTORY
+  Avg Inventory: 98.1 units
+
+PERFORMANCE
+  Total Reward: -111887.30
+
+============================================================
+ SUMMARY COMPARISON 
+============================================================
+ Algorithm   Avg Cost  Fill Rate  Stockout Rate  Avg Inventory   Total Reward
+       PPO 282.436854   0.879506       0.190959      89.630814 -103089.451831
+       SAC 286.872748   0.882185       0.225753      65.346988 -104708.553153
+Double DQN 306.540548   0.899691       0.156986      98.115890 -111887.300000
+    Dyna-Q 331.359178   0.838438       0.221918     111.224932 -120946.100000
+Q-Learning 509.685479   0.222492       0.941096       1.381370 -186035.200000
+
+Comparison plot saved to: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\results\evaluation_20251125_133056\comparison_plots.png
