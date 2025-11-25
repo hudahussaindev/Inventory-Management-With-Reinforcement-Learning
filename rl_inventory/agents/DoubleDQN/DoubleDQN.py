@@ -7,11 +7,11 @@ from collections import deque
 import random
 
 
-class SimpleDQNNetwork(nn.Module):
-    "Neural network for Q-value approximation."
+class DQNNetwork(nn.Module):
+    """Neural network for Q-value approximation."""
 
     def __init__(self, state_dim: int, action_dim: int, hidden_size: int = 128):
-        super(SimpleDQNNetwork, self).__init__()
+        super(DQNNetwork, self).__init__()
         self.fc1 = nn.Linear(state_dim, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, action_dim)
@@ -22,8 +22,8 @@ class SimpleDQNNetwork(nn.Module):
         return self.fc3(x)
 
 
-class SimpleReplayBuffer:
-    "Experience replay buffer."
+class ReplayBuffer:
+    """Experience replay buffer."""
 
     def __init__(self, capacity: int = 10000):
         self.buffer = deque(maxlen=capacity)
@@ -78,16 +78,16 @@ class DoubleDQNAgent:
             "cuda" if torch.cuda.is_available() else "cpu")
 
         # Networks
-        self.main_network = SimpleDQNNetwork(
+        self.main_network = DQNNetwork(
             state_dim, action_dim, hidden_size).to(self.device)
-        self.target_network = SimpleDQNNetwork(
+        self.target_network = DQNNetwork(
             state_dim, action_dim, hidden_size).to(self.device)
         self.target_network.load_state_dict(self.main_network.state_dict())
         self.target_network.eval()
 
         # Optimizer and buffer
         self.optimizer = optim.Adam(self.main_network.parameters(), lr=lr)
-        self.replay_buffer = SimpleReplayBuffer(buffer_size)
+        self.replay_buffer = ReplayBuffer(buffer_size)
         self.step_count = 0
 
     def select_action(self, state: np.ndarray, training: bool = True) -> int:

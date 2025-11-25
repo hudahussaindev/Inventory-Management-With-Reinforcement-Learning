@@ -38,7 +38,8 @@ from rl_inventory.scripts.demo_ddqn import train_ddqn
 EnvFactory = Callable[[Optional[int]], ExtendedInventoryEnv]
 
 # Base path for saving models (relative to project root)
-BASE_AGENTS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "agents")
+BASE_AGENTS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "agents")
 
 
 def get_model_save_path(agent_name: str) -> str:
@@ -58,13 +59,14 @@ def list_saved_models(agent_name: str) -> List[str]:
     path = get_model_save_path(agent_name)
     if not os.path.exists(path):
         return []
-    
+
     models = []
     for item in os.listdir(path):
         item_path = os.path.join(path, item)
         if os.path.isfile(item_path) or os.path.isdir(item_path):
             # Remove extension for display
-            name = os.path.splitext(item)[0] if os.path.isfile(item_path) else item
+            name = os.path.splitext(
+                item)[0] if os.path.isfile(item_path) else item
             if name not in models:
                 models.append(name)
     return sorted(models)
@@ -75,7 +77,7 @@ def prompt_model_name(agent_name: str) -> str:
     print(f"\nModel naming for {agent_name}:")
     print("  [1] Auto-generate name")
     print("  [2] Enter custom name")
-    
+
     while True:
         choice = input("Choice (1/2): ").strip()
         if choice == "1":
@@ -100,7 +102,7 @@ def prompt_train_or_load(agent_name: str, auto_mode: bool = False, force_train: 
         force_train: If True, always train a new model
     """
     saved_models = list_saved_models(agent_name)
-    
+
     print(f"\n{'='*50}")
     print(f" {agent_name.upper()} ")
     print(f"{'='*50}")
@@ -129,9 +131,10 @@ def prompt_train_or_load(agent_name: str, auto_mode: bool = False, force_train: 
         for i, model in enumerate(saved_models, 1):
             print(f"  [{i}] {model}")
         print(f"  [N] Train new model")
-        
+
         while True:
-            choice = input(f"\nSelect model to load or 'N' to train new: ").strip().upper()
+            choice = input(
+                f"\nSelect model to load or 'N' to train new: ").strip().upper()
             if choice == "N":
                 model_name = prompt_model_name(agent_name)
                 return True, model_name
@@ -139,7 +142,8 @@ def prompt_train_or_load(agent_name: str, auto_mode: bool = False, force_train: 
                 idx = int(choice) - 1
                 if 0 <= idx < len(saved_models):
                     return False, saved_models[idx]
-                print(f"  Invalid selection. Enter 1-{len(saved_models)} or 'N'.")
+                print(
+                    f"  Invalid selection. Enter 1-{len(saved_models)} or 'N'.")
             except ValueError:
                 print(f"  Invalid input. Enter a number or 'N'.")
     else:
@@ -150,21 +154,21 @@ def prompt_train_or_load(agent_name: str, auto_mode: bool = False, force_train: 
 
 # Model Save/Load Functions
 
-def save_qlearning_model(agent: QLearningAgent, discretizer: StateDiscretizer, 
+def save_qlearning_model(agent: QLearningAgent, discretizer: StateDiscretizer,
                          agent_name: str, model_name: str) -> str:
     "Save Q-Learning or Dyna-Q agent (Q-table + discretizer)."
     path = get_model_save_path(agent_name)
     filepath = os.path.join(path, f"{model_name}.pkl")
-    
+
     save_data = {
         "Q": dict(agent.Q),
         "n_actions": agent.n_actions,
         "discretizer": discretizer,  # Save entire discretizer object
     }
-    
+
     with open(filepath, "wb") as f:
         pickle.dump(save_data, f)
-    
+
     print(f"  Saved model to: {filepath}")
     return filepath
 
@@ -173,7 +177,7 @@ def load_qlearning_model(agent_name: str, model_name: str) -> tuple[QLearningAge
     "Load Q-Learning or Dyna-Q agent."
     path = get_model_save_path(agent_name)
     filepath = os.path.join(path, f"{model_name}.pkl")
-    
+
     with open(filepath, "rb") as f:
         save_data = pickle.load(f)
     
@@ -190,7 +194,7 @@ def load_qlearning_model(agent_name: str, model_name: str) -> tuple[QLearningAge
         epsilon=0.0,  # No exploration during evaluation
     )
     agent.Q.update(save_data["Q"])
-    
+
     print(f"  Loaded model from: {filepath}")
     return agent, discretizer
 
@@ -214,7 +218,7 @@ def load_ppo_model(model_name: str):
     "Load PPO model."
     path = get_model_save_path("ppo")
     filepath = os.path.join(path, model_name)
-    
+
     agent = PPO.load(filepath)
     print(f"  Loaded model from: {filepath}.zip")
     return agent
@@ -224,7 +228,7 @@ def load_sac_model(model_name: str):
     "Load SAC model."
     path = get_model_save_path("sac")
     filepath = os.path.join(path, model_name)
-    
+
     agent = SAC.load(filepath)
     print(f"  Loaded model from: {filepath}.zip")
     return agent
@@ -259,7 +263,7 @@ def load_ddqn_model(model_name: str):
     env = ExtendedInventoryEnv_DDQN(discrete_actions=True)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
-    
+
     agent = DoubleDQNAgent(state_dim=state_dim, action_dim=action_dim)
     
     # Use the agent's built-in load method if available
@@ -397,7 +401,8 @@ class InventoryEvaluator:
 
         total_demand = float(sum(demands))
         total_lost = float(sum(lost_sales))
-        fill_rate = 1.0 - (total_lost / total_demand) if total_demand > 0 else 1.0
+        fill_rate = 1.0 - \
+            (total_lost / total_demand) if total_demand > 0 else 1.0
 
         return {
             "total_cost": total_cost,
@@ -436,7 +441,7 @@ class InventoryEvaluator:
         for key in keys:
             values = [r[key] for r in results]
             aggregated[key] = {
-                "mean": float(np.mean(values)), 
+                "mean": float(np.mean(values)),
                 "std": float(np.std(values))
             }
 
@@ -448,7 +453,8 @@ class InventoryEvaluator:
         print(f"\n{name} Evaluation Report")
 
         print(f"\nCOSTS")
-        print(f"  Avg Daily Cost: ${metrics['avg_cost']['mean']:.2f} (+/-{metrics['avg_cost']['std']:.2f})")
+        print(
+            f"  Avg Daily Cost: ${metrics['avg_cost']['mean']:.2f} (+/-{metrics['avg_cost']['std']:.2f})")
         print(f"  Holding Cost:   ${metrics['holding_cost']['mean']:.2f}")
         print(f"  Stockout Cost:  ${metrics['stockout_cost']['mean']:.2f}")
         print(f"  Ordering Cost:  ${metrics['ordering_cost']['mean']:.2f}")
@@ -489,6 +495,7 @@ class InventoryEvaluator:
 
 class DDQNWrapper:
     "Wrapper to make DDQN agent compatible with SB3-style predict() interface."
+
     def __init__(self, agent):
         self.agent = agent
 
@@ -537,7 +544,8 @@ def main():
     else:
         q_agent, q_disc = load_qlearning_model("qlearning", model_name)
 
-    q_env_factory = make_env_factory(ExtendedInventoryEnv, discrete_actions=True)
+    q_env_factory = make_env_factory(
+        ExtendedInventoryEnv, discrete_actions=True)
     q_evaluator = InventoryEvaluator(q_env_factory)
     q_metrics = q_evaluator.evaluate_multiple(q_agent, q_disc, num_episodes=10)
     q_evaluator.print_report(q_metrics, "Q-Learning")
@@ -563,7 +571,8 @@ def main():
 
     ppo_env_factory = make_env_factory(ExtendedInventoryEnvPPO)
     ppo_evaluator = InventoryEvaluator(ppo_env_factory)
-    ppo_metrics = ppo_evaluator.evaluate_multiple(ppo_agent, discretizer=None, num_episodes=10)
+    ppo_metrics = ppo_evaluator.evaluate_multiple(
+        ppo_agent, discretizer=None, num_episodes=10)
     ppo_evaluator.print_report(ppo_metrics, "PPO")
 
     results_rows.append({
@@ -587,7 +596,8 @@ def main():
 
     sac_env_factory = make_env_factory(ExtendedInventoryEnvSAC)
     sac_evaluator = InventoryEvaluator(sac_env_factory)
-    sac_metrics = sac_evaluator.evaluate_multiple(sac_agent, discretizer=None, num_episodes=10)
+    sac_metrics = sac_evaluator.evaluate_multiple(
+        sac_agent, discretizer=None, num_episodes=10)
     sac_evaluator.print_report(sac_metrics, "SAC")
 
     results_rows.append({
@@ -609,9 +619,11 @@ def main():
     else:
         dyna_agent, dyna_disc = load_qlearning_model("dyna_q", model_name)
 
-    dyna_env_factory = make_env_factory(ExtendedInventoryEnv, discrete_actions=True)
+    dyna_env_factory = make_env_factory(
+        ExtendedInventoryEnv, discrete_actions=True)
     dyna_evaluator = InventoryEvaluator(dyna_env_factory)
-    dyna_metrics = dyna_evaluator.evaluate_multiple(dyna_agent, dyna_disc, num_episodes=10)
+    dyna_metrics = dyna_evaluator.evaluate_multiple(
+        dyna_agent, dyna_disc, num_episodes=10)
     dyna_evaluator.print_report(dyna_metrics, "Dyna-Q")
 
     results_rows.append({
@@ -634,9 +646,11 @@ def main():
         ddqn_agent = load_ddqn_model(model_name)
 
     wrapped_ddqn = DDQNWrapper(ddqn_agent)
-    ddqn_env_factory = make_env_factory(ExtendedInventoryEnv_DDQN, discrete_actions=True)
+    ddqn_env_factory = make_env_factory(
+        ExtendedInventoryEnv_DDQN, discrete_actions=True)
     ddqn_evaluator = InventoryEvaluator(ddqn_env_factory)
-    ddqn_metrics = ddqn_evaluator.evaluate_multiple(wrapped_ddqn, discretizer=None, num_episodes=10)
+    ddqn_metrics = ddqn_evaluator.evaluate_multiple(
+        wrapped_ddqn, discretizer=None, num_episodes=10)
     ddqn_evaluator.print_report(ddqn_metrics, "Double DQN")
 
     results_rows.append({
