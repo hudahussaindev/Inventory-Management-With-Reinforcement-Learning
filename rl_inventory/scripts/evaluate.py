@@ -55,22 +55,36 @@ def generate_model_name() -> str:
 
 
 def list_saved_models(agent_name: str) -> List[str]:
-    "List all saved models for a given agent."
+    """List all saved models for a given agent."""
     path = get_model_save_path(agent_name)
     if not os.path.exists(path):
         return []
-
+    
     models = []
+    
+    # Valid extensions based on agent type
+    valid_extensions = {
+        'qlearning': ['.pkl'],
+        'dyna_q': ['.pkl'],
+        'ppo': ['.zip'],
+        'sac': ['.zip'],
+        'DoubleDQN': ['.pt']
+    }
+    
+    extensions = valid_extensions.get(agent_name, ['.pkl', '.zip', '.pt'])
+    
     for item in os.listdir(path):
+        if item.startswith('.'):
+            continue
+            
         item_path = os.path.join(path, item)
-        if os.path.isfile(item_path) or os.path.isdir(item_path):
-            # Remove extension for display
-            name = os.path.splitext(
-                item)[0] if os.path.isfile(item_path) else item
-            if name not in models:
+        
+        if os.path.isfile(item_path):
+            name, ext = os.path.splitext(item)
+            if ext in extensions and name not in models:
                 models.append(name)
+    
     return sorted(models)
-
 
 def prompt_model_name(agent_name: str) -> str:
     "Prompt user to generate or enter a custom model name."
@@ -324,12 +338,14 @@ class InventoryEvaluator:
         agent,
         discretizer: Optional[StateDiscretizer] = None,
         episode_seed: Optional[int] = None,
+        reward_scale: float = 1.0,
     ) -> Dict[str, float]:
         """
         Run a single evaluation episode and collect metrics.
 
         - For tabular / Dyna / Deep Q: pass a discretizer and Q-table / agent with select_action().
         - For PPO / SAC: discretizer=None, and agent must have .predict(obs, deterministic=True).
+        - reward_scale: Factor to scale rewards back up (e.g., 100.0 for envs that scale by 0.01)
         """
         env = self.env_factory(episode_seed)
         state = self._get_initial_state(env)
@@ -404,9 +420,12 @@ class InventoryEvaluator:
         fill_rate = 1.0 - \
             (total_lost / total_demand) if total_demand > 0 else 1.0
 
+        # Scale the total reward back up to the original scale for fair comparison
+        scaled_total_reward = total_reward * reward_scale
+
         return {
             "total_cost": total_cost,
-            "total_reward": total_reward,
+            "total_reward": scaled_total_reward,
             "avg_cost": total_cost / steps if steps > 0 else 0.0,
             "holding_cost": float(sum(costs["holding"])),
             "stockout_cost": float(sum(costs["stockout"])),
@@ -423,6 +442,7 @@ class InventoryEvaluator:
         discretizer: Optional[StateDiscretizer] = None,
         num_episodes: int = 10,
         base_seed: int = 0,
+        reward_scale: float = 1.0,
     ) -> Dict[str, Dict[str, float]]:
         "Evaluate agent over multiple episodes with different seeds."
 
@@ -430,7 +450,7 @@ class InventoryEvaluator:
 
         for i in range(num_episodes):
             metrics = self.evaluate_episode(
-                agent, discretizer, episode_seed=base_seed + i)
+                agent, discretizer, episode_seed=base_seed + i, reward_scale=reward_scale)
             results.append(metrics)
 
         aggregated: Dict[str, Dict[str, float]] = {}
@@ -534,7 +554,7 @@ def main():
 
     results_rows: List[Dict[str, float]] = []
 
-    # Q-LEARNING (TABULAR, DISCRETE ACTIONS)
+    # Q-LEARNING (TABULAR, DISCRETE ACTIONS) - No reward scaling
     train_new, model_name = prompt_train_or_load("qlearning", auto_mode, force_train)
     
     if train_new:
@@ -547,7 +567,7 @@ def main():
     q_env_factory = make_env_factory(
         ExtendedInventoryEnv, discrete_actions=True)
     q_evaluator = InventoryEvaluator(q_env_factory)
-    q_metrics = q_evaluator.evaluate_multiple(q_agent, q_disc, num_episodes=10)
+    q_metrics = q_evaluator.evaluate_multiple(q_agent, q_disc, num_episodes=10, reward_scale=1.0)
     q_evaluator.print_report(q_metrics, "Q-Learning")
 
     results_rows.append({
@@ -559,7 +579,7 @@ def main():
         "Total Reward": q_metrics["total_reward"]["mean"],
     })
 
-    # PPO (CONTINUOUS)
+    # PPO (CONTINUOUS) - Reward scaled by 0.01, so scale back up by 100
     train_new, model_name = prompt_train_or_load("ppo", auto_mode, force_train)
     
     if train_new:
@@ -572,7 +592,7 @@ def main():
     ppo_env_factory = make_env_factory(ExtendedInventoryEnvPPO)
     ppo_evaluator = InventoryEvaluator(ppo_env_factory)
     ppo_metrics = ppo_evaluator.evaluate_multiple(
-        ppo_agent, discretizer=None, num_episodes=10)
+        ppo_agent, discretizer=None, num_episodes=10, reward_scale=100.0)
     ppo_evaluator.print_report(ppo_metrics, "PPO")
 
     results_rows.append({
@@ -584,7 +604,7 @@ def main():
         "Total Reward": ppo_metrics["total_reward"]["mean"],
     })
 
-    # SAC (CONTINUOUS)
+    # SAC (CONTINUOUS) - Reward scaled by 0.01, so scale back up by 100
     train_new, model_name = prompt_train_or_load("sac", auto_mode, force_train)
     
     if train_new:
@@ -597,7 +617,7 @@ def main():
     sac_env_factory = make_env_factory(ExtendedInventoryEnvSAC)
     sac_evaluator = InventoryEvaluator(sac_env_factory)
     sac_metrics = sac_evaluator.evaluate_multiple(
-        sac_agent, discretizer=None, num_episodes=10)
+        sac_agent, discretizer=None, num_episodes=10, reward_scale=100.0)
     sac_evaluator.print_report(sac_metrics, "SAC")
 
     results_rows.append({
@@ -609,7 +629,7 @@ def main():
         "Total Reward": sac_metrics["total_reward"]["mean"],
     })
 
-    # DYNA-Q (DISCRETE)
+    # DYNA-Q (DISCRETE) - No reward scaling
     train_new, model_name = prompt_train_or_load("dyna_q", auto_mode, force_train)
     
     if train_new:
@@ -623,7 +643,7 @@ def main():
         ExtendedInventoryEnv, discrete_actions=True)
     dyna_evaluator = InventoryEvaluator(dyna_env_factory)
     dyna_metrics = dyna_evaluator.evaluate_multiple(
-        dyna_agent, dyna_disc, num_episodes=10)
+        dyna_agent, dyna_disc, num_episodes=10, reward_scale=1.0)
     dyna_evaluator.print_report(dyna_metrics, "Dyna-Q")
 
     results_rows.append({
@@ -635,7 +655,7 @@ def main():
         "Total Reward": dyna_metrics["total_reward"]["mean"],
     })
 
-    # DOUBLE DQN (DISCRETE)
+    # DOUBLE DQN (DISCRETE) - Reward scaled by 0.01, so scale back up by 100
     train_new, model_name = prompt_train_or_load("DoubleDQN", auto_mode, force_train)
     
     if train_new:
@@ -650,7 +670,7 @@ def main():
         ExtendedInventoryEnv_DDQN, discrete_actions=True)
     ddqn_evaluator = InventoryEvaluator(ddqn_env_factory)
     ddqn_metrics = ddqn_evaluator.evaluate_multiple(
-        wrapped_ddqn, discretizer=None, num_episodes=10)
+        wrapped_ddqn, discretizer=None, num_episodes=10, reward_scale=100.0)
     ddqn_evaluator.print_report(ddqn_metrics, "Double DQN")
 
     results_rows.append({
