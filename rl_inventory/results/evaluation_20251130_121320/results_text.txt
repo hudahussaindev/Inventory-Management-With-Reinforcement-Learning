@@ -3,8 +3,11 @@
  QLEARNING 
 ==================================================
 
-Auto mode: Loading first saved model: 20251124_234818
-  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\qlearning\trained_models\20251124_234818.pkl
+Found 1 saved model(s):
+  [1] 20251124_234818
+  [N] Train new model
+
+Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\qlearning\trained_models\20251124_234818.pkl
 
 Q-Learning Evaluation Report
 
@@ -28,40 +31,47 @@ PERFORMANCE
  PPO 
 ==================================================
 
-Auto mode: Loading first saved model: ppo_model_20251124_232909
-  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\ppo\trained_models\ppo_model_20251124_232909.zip
+Found 1 saved model(s):
+  [1] ppo_model_20251129_115221
+  [N] Train new model
+
+Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\ppo\trained_models\ppo_model_20251129_115221.zip
 
 PPO Evaluation Report
 
 COSTS
-  Avg Daily Cost: $282.44 (+/-6.12)
-  Holding Cost:   $32715.25
-  Stockout Cost:  $25183.56
-  Ordering Cost:  $45190.64
+  Avg Daily Cost: $265.89 (+/-5.03)
+  Holding Cost:   $24548.85
+  Stockout Cost:  $24900.26
+  Ordering Cost:  $47601.46
 
 SERVICE LEVEL
   Fill Rate:     88.0%
-  Stockout Rate: 19.1%
+  Stockout Rate: 20.5%
 
 INVENTORY
-  Avg Inventory: 89.6 units
+  Avg Inventory: 67.3 units
 
 PERFORMANCE
-  Total Reward: -103089.45
+  Total Reward: -97050.57
 
 ==================================================
  SAC 
 ==================================================
 
-Auto mode: Loading first saved model: 20251125_000337
-  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\sac\trained_models\20251125_000337.zip
+Found 2 saved model(s):
+  [1] 20251125_000337
+  [2] sac_inventory
+  [N] Train new model
+
+Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\sac\trained_models\20251125_000337.zip
 
 SAC Evaluation Report
 
 COSTS
   Avg Daily Cost: $286.87 (+/-6.95)
-  Holding Cost:   $23851.65
-  Stockout Cost:  $24541.01
+  Holding Cost:   $23851.66
+  Stockout Cost:  $24541.00
   Ordering Cost:  $56315.89
 
 SERVICE LEVEL
@@ -72,14 +82,17 @@ INVENTORY
   Avg Inventory: 65.3 units
 
 PERFORMANCE
-  Total Reward: -104708.55
+  Total Reward: -104708.56
 
 ==================================================
  DYNA_Q 
 ==================================================
 
-Auto mode: Loading first saved model: 20251125_011757
-  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\dyna_q\trained_models\20251125_011757.pkl
+Found 1 saved model(s):
+  [1] 20251125_011757
+  [N] Train new model
+
+Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\dyna_q\trained_models\20251125_011757.pkl
 
 Dyna-Q Evaluation Report
 
@@ -103,8 +116,11 @@ PERFORMANCE
  DOUBLEDQN 
 ==================================================
 
-Auto mode: Loading first saved model: 20251125_012040
-  Loaded model from: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\DoubleDQN\trained_models\20251125_012040.pt
+Found 1 saved model(s):
+  [1] 20251125_012040
+  [N] Train new model
+
+Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\DoubleDQN\trained_models\20251125_012040.pt
 
 Double DQN Evaluation Report
 
@@ -128,10 +144,10 @@ PERFORMANCE
  SUMMARY COMPARISON 
 ============================================================
  Algorithm   Avg Cost  Fill Rate  Stockout Rate  Avg Inventory   Total Reward
-       PPO 282.436854   0.879506       0.190959      89.630814 -103089.451831
-       SAC 286.872748   0.882185       0.225753      65.346988 -104708.553153
+       PPO 265.891964   0.879619       0.204932      67.257121  -97050.566958
+       SAC 286.872756   0.882185       0.225753      65.347008 -104708.555759
 Double DQN 306.540548   0.899691       0.156986      98.115890 -111887.300000
     Dyna-Q 331.359178   0.838438       0.221918     111.224932 -120946.100000
 Q-Learning 509.685479   0.222492       0.941096       1.381370 -186035.200000
 
-Comparison plot saved to: C:\Users\hudah\Downloads\COMP 4010\rl-inventory-management-comp4010\rl_inventory\results\evaluation_20251125_133056\comparison_plots.png
+Comparison plot saved to: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\results\evaluation_20251130_121320\comparison_plots.png
