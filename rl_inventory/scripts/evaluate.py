@@ -815,7 +815,7 @@ def main():
     
     if train_new:
         print("\n  Training Q-Learning agent...")
-        q_agent, q_disc = train_q_agent(num_episodes=548)
+        q_agent, q_disc = train_q_agent(num_episodes=1000)
         save_qlearning_model(q_agent, q_disc, "qlearning", model_name)
     else:
         q_agent, q_disc = load_qlearning_model("qlearning", model_name)

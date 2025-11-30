@@ -3,29 +3,83 @@
  QLEARNING 
 ==================================================
 
-Found 1 saved model(s):
-  [1] 20251124_234818
-  [N] Train new model
+No saved models found. Training new model...
 
-Select model to load or 'N' to train new:   Loaded model from: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\qlearning\trained_models\20251124_234818.pkl
+Model naming for qlearning:
+  [1] Auto-generate name
+  [2] Enter custom name
+Choice (1/2):   Generated name: 20251130_145022
+
+  Training Q-Learning agent...
+Episode 20, total reward = -147704.00
+Episode 40, total reward = -122618.00
+Episode 60, total reward = -145019.00
+Episode 80, total reward = -118329.00
+Episode 100, total reward = -116777.00
+Episode 120, total reward = -119857.00
+Episode 140, total reward = -132168.00
+Episode 160, total reward = -123952.00
+Episode 180, total reward = -119990.00
+Episode 200, total reward = -116051.00
+Episode 220, total reward = -120307.00
+Episode 240, total reward = -113723.00
+Episode 260, total reward = -112094.00
+Episode 280, total reward = -117436.00
+Episode 300, total reward = -121116.00
+Episode 320, total reward = -122221.00
+Episode 340, total reward = -109126.00
+Episode 360, total reward = -111519.00
+Episode 380, total reward = -114277.00
+Episode 400, total reward = -115435.00
+Episode 420, total reward = -117807.00
+Episode 440, total reward = -127248.00
+Episode 460, total reward = -123290.00
+Episode 480, total reward = -120729.00
+Episode 500, total reward = -126079.00
+Episode 520, total reward = -123124.00
+Episode 540, total reward = -124703.00
+Episode 560, total reward = -129459.00
+Episode 580, total reward = -116171.00
+Episode 600, total reward = -119973.00
+Episode 620, total reward = -127438.00
+Episode 640, total reward = -132399.00
+Episode 660, total reward = -148897.00
+Episode 680, total reward = -136076.00
+Episode 700, total reward = -116165.00
+Episode 720, total reward = -116478.00
+Episode 740, total reward = -111011.00
+Episode 760, total reward = -121116.00
+Episode 780, total reward = -123593.00
+Episode 800, total reward = -110805.00
+Episode 820, total reward = -114250.00
+Episode 840, total reward = -134376.00
+Episode 860, total reward = -118919.00
+Episode 880, total reward = -121280.00
+Episode 900, total reward = -123243.00
+Episode 920, total reward = -128871.00
+Episode 940, total reward = -117226.00
+Episode 960, total reward = -125517.00
+Episode 980, total reward = -142185.00
+Episode 1000, total reward = -149161.00
+  Saved model to: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\agents\qlearning\trained_models\20251130_145022.pkl
 
 Q-Learning Evaluation Report
 
 COSTS
-  Avg Daily Cost: $509.69 (+/-9.87)
-  Holding Cost:   $504.20
-  Stockout Cost:  $161715.00
-  Ordering Cost:  $23816.00
+  Avg Daily Cost: $535.08 (+/-4.16)
+  Holding Cost:   $76.80
+  Stockout Cost:  $179593.00
+  Ordering Cost:  $15634.00
 
 SERVICE LEVEL
-  Fill Rate:     22.2%
-  Stockout Rate: 94.1%
+  Fill Rate:     13.7%
+  Stockout Rate: 99.0%
 
 INVENTORY
-  Avg Inventory: 1.4 units
+  Avg Inventory: 0.2 units
 
 PERFORMANCE
-  Total Reward: -186035.20
+  Total Reward: -195303.80
 
 ==================================================
  PPO 
@@ -148,6 +202,6 @@ PERFORMANCE
        SAC 286.872756   0.882185       0.225753      65.347008 -104708.555759
 Double DQN 306.540548   0.899691       0.156986      98.115890 -111887.300000
     Dyna-Q 331.359178   0.838438       0.221918     111.224932 -120946.100000
-Q-Learning 509.685479   0.222492       0.941096       1.381370 -186035.200000
+Q-Learning 535.078904   0.137259       0.990411       0.210411 -195303.800000
 
-Comparison plot saved to: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\results\evaluation_20251130_121320\comparison_plots.png
+Comparison plot saved to: C:\Users\Huda\Downloads\Carleton 2025 Fall\COMP 4010\rl-inventory-management-comp4010\rl_inventory\results\evaluation_20251130_145018\comparison_plots.png
