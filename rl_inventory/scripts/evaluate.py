@@ -769,6 +769,129 @@ def generate_pdf_report(
     doc.build(story)
     return pdf_path
 
+def pick_pretrained_model(agent_name: str) -> str:
+    models = list_saved_models(agent_name)
+    if not models:
+        raise FileNotFoundError(
+            f"No pretrained model found for '{agent_name}'. "
+            f"Expected one of {agent_name} models inside: {get_model_save_path(agent_name)}"
+        )
+    # Pick newest by name if you use timestamps; otherwise pick first
+    return models[-1]
+
+def evaluate_pretrained_all(
+    num_episodes: int = 10,
+    base_seed: int = 0,
+) -> dict:
+    """
+    Load pretrained models for all algorithms and evaluate them.
+    Returns paths + summary dataframe.
+    """
+    results_dir = create_results_directory()
+
+    output_capture = OutputCapture()
+    output_capture.start()
+
+    results_rows = []
+
+    # Q-learning
+    q_name = pick_pretrained_model("qlearning")
+    q_agent, q_disc = load_qlearning_model("qlearning", q_name)
+    q_eval = InventoryEvaluator(make_env_factory(ExtendedInventoryEnv, discrete_actions=True))
+    q_metrics = q_eval.evaluate_multiple(q_agent, q_disc, num_episodes=num_episodes, base_seed=base_seed, reward_scale=1.0)
+    q_eval.print_report(q_metrics, "Q-Learning")
+    results_rows.append({
+        "Algorithm": "Q-Learning",
+        "Avg Cost": q_metrics["avg_cost"]["mean"],
+        "Fill Rate": q_metrics["fill_rate"]["mean"],
+        "Stockout Rate": q_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": q_metrics["avg_inventory"]["mean"],
+        "Total Reward": q_metrics["total_reward"]["mean"],
+    })
+
+    # PPO
+    ppo_name = pick_pretrained_model("ppo")
+    ppo_agent = load_ppo_model(ppo_name)
+    ppo_eval = InventoryEvaluator(make_env_factory(ExtendedInventoryEnvPPO))
+    ppo_metrics = ppo_eval.evaluate_multiple(ppo_agent, None, num_episodes=num_episodes, base_seed=base_seed, reward_scale=100.0)
+    ppo_eval.print_report(ppo_metrics, "PPO")
+    results_rows.append({
+        "Algorithm": "PPO",
+        "Avg Cost": ppo_metrics["avg_cost"]["mean"],
+        "Fill Rate": ppo_metrics["fill_rate"]["mean"],
+        "Stockout Rate": ppo_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": ppo_metrics["avg_inventory"]["mean"],
+        "Total Reward": ppo_metrics["total_reward"]["mean"],
+    })
+
+    # SAC
+    sac_name = pick_pretrained_model("sac")
+    sac_agent = load_sac_model(sac_name)
+    sac_eval = InventoryEvaluator(make_env_factory(ExtendedInventoryEnvSAC))
+    sac_metrics = sac_eval.evaluate_multiple(sac_agent, None, num_episodes=num_episodes, base_seed=base_seed, reward_scale=100.0)
+    sac_eval.print_report(sac_metrics, "SAC")
+    results_rows.append({
+        "Algorithm": "SAC",
+        "Avg Cost": sac_metrics["avg_cost"]["mean"],
+        "Fill Rate": sac_metrics["fill_rate"]["mean"],
+        "Stockout Rate": sac_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": sac_metrics["avg_inventory"]["mean"],
+        "Total Reward": sac_metrics["total_reward"]["mean"],
+    })
+
+    # Dyna-Q
+    dyna_name = pick_pretrained_model("dyna_q")
+    dyna_agent, dyna_disc = load_qlearning_model("dyna_q", dyna_name)
+    dyna_eval = InventoryEvaluator(make_env_factory(ExtendedInventoryEnv, discrete_actions=True))
+    dyna_metrics = dyna_eval.evaluate_multiple(dyna_agent, dyna_disc, num_episodes=num_episodes, base_seed=base_seed, reward_scale=1.0)
+    dyna_eval.print_report(dyna_metrics, "Dyna-Q")
+    results_rows.append({
+        "Algorithm": "Dyna-Q",
+        "Avg Cost": dyna_metrics["avg_cost"]["mean"],
+        "Fill Rate": dyna_metrics["fill_rate"]["mean"],
+        "Stockout Rate": dyna_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": dyna_metrics["avg_inventory"]["mean"],
+        "Total Reward": dyna_metrics["total_reward"]["mean"],
+    })
+
+    # DoubleDQN
+    ddqn_name = pick_pretrained_model("DoubleDQN")
+    ddqn_agent = load_ddqn_model(ddqn_name)
+    wrapped = DDQNWrapper(ddqn_agent)
+    ddqn_eval = InventoryEvaluator(make_env_factory(ExtendedInventoryEnv_DDQN, discrete_actions=True))
+    ddqn_metrics = ddqn_eval.evaluate_multiple(wrapped, None, num_episodes=num_episodes, base_seed=base_seed, reward_scale=100.0)
+    ddqn_eval.print_report(ddqn_metrics, "Double DQN")
+    results_rows.append({
+        "Algorithm": "Double DQN",
+        "Avg Cost": ddqn_metrics["avg_cost"]["mean"],
+        "Fill Rate": ddqn_metrics["fill_rate"]["mean"],
+        "Stockout Rate": ddqn_metrics["stockout_rate"]["mean"],
+        "Avg Inventory": ddqn_metrics["avg_inventory"]["mean"],
+        "Total Reward": ddqn_metrics["total_reward"]["mean"],
+    })
+
+    df = pd.DataFrame(results_rows).sort_values("Avg Cost", ascending=True)
+
+    plot_path = os.path.join(results_dir, "comparison_plots.png")
+    InventoryEvaluator.compare_algorithms(df, save_path=plot_path)
+
+    output_capture.stop()
+    captured = output_capture.get_output()
+
+    csv_path = os.path.join(results_dir, "results_summary.csv")
+    df.to_csv(csv_path, index=False)
+
+    pdf_path = generate_pdf_report(results_dir, captured, df, plot_path)
+
+    return {
+        "results_dir": results_dir,
+        "df": df,
+        "plot_path": plot_path,
+        "csv_path": csv_path,
+        "pdf_path": pdf_path,
+        "captured_output": captured,
+    }
+
 
 def main():
     """
